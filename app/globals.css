@@ -1,0 +1,35 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * Paleta do template. Pra trocar a marca, mude so estas variaveis —
+ * Tailwind e os graficos leem daqui.
+ */
+:root {
+  color-scheme: dark;
+
+  --ink:   #0a0a0b;  /* fundo */
+  --panel: #141416;  /* cartoes */
+  --line:  #26262b;  /* bordas */
+  --muted: #8d8d96;  /* texto secundario */
+  --text:  #f4f1ec;  /* texto principal */
+
+  --brand: #ff6a00;  /* laranja da marca */
+  --good:  #ff8c42;  /* resultado positivo */
+  --bad:   #f04438;  /* prejuizo, reembolso */
+  --warn:  #fbbf24;  /* pendente */
+}
+
+body {
+  background: var(--ink);
+  color: var(--text);
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-thumb { background: var(--line); border-radius: 6px; }
+::-webkit-scrollbar-thumb:hover { background: var(--brand); }
+::-webkit-scrollbar-track { background: transparent; }
+
+::selection { background: var(--brand); color: #0a0a0b; }
