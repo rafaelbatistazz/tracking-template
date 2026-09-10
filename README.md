@@ -96,7 +96,7 @@ Pra zerar tudo e comecar do nada de novo: apague o `local.db`.
   ticket medio, taxa de aprovacao no cartao, CPM, CPC, CTR, vendas sem tracking.
 - Custo por produto e imposto, com recalculo dos pedidos ja gravados.
 - Conversao de moeda: conta de anuncio em moeda diferente da do dashboard entra
-  convertida pela cotacao do dia (BCE, via frankfurter.app, sem chave). A taxa
+  convertida pela cotacao do dia (BCE, via frankfurter.dev, sem chave). A taxa
   usada fica gravada em `ad_insights.fx_rate` e a cotacao em `fx_rates`.
 - Pixel server-side (Conversions API) com fila e retry, dedupe por `event_id`,
   regra de IP (so IPv6 / com fallback / sem IP), valor por comissao ou bruto.
@@ -125,7 +125,7 @@ a moeda de origem e a taxa aplicada, entao da pra auditar linha a linha.
   moeda da conta: apague as linhas em `ad_insights` e rode o sync de novo com
   `?days=90` pra reconverter.
 
-`npm run check` roda os seis cenarios da conversao sem tocar na rede.
+`npm run check` roda os sete cenarios da conversao sem tocar na rede.
 
 ## Um aviso sobre os adapters
 

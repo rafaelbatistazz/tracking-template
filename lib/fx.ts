@@ -4,13 +4,13 @@
  * Conta de anuncio em USD e dashboard em BRL: sem isso o gasto entra somado
  * cru no faturamento e ROAS, lucro e CPA saem errados.
  *
- * Taxa diaria do frankfurter.app (BCE, sem chave, com historico). Guardada em
+ * Taxa diaria do frankfurter.dev (BCE, sem chave, com historico). Guardada em
  * fx_rates: o sync roda por linha de anuncio, entao a API leva uma chamada por
  * par/dia, nao uma por linha.
  */
 import { db, initDb } from './db.ts'
 
-const API = process.env.FX_API_URL || 'https://api.frankfurter.app'
+const API = process.env.FX_API_URL || 'https://api.frankfurter.dev/v1'
 
 /** Cache de processo, pra taxa sem cotacao propria (fim de semana, feriado). */
 const mem = new Map<string, number>()
@@ -29,7 +29,8 @@ async function lastKnown(from: string, to: string, date: string): Promise<number
  * O BCE nao cota fim de semana nem feriado: nesses dias a API responde com a
  * cotacao do ultimo dia util e devolve a data dela em `date`. Quando a data
  * volta diferente da pedida, a taxa vale pro calculo mas nao vira linha em
- * fx_rates -- senao o dia ficaria congelado numa cotacao que ainda vai sair.
+ * fx_rates nem no cache de memoria -- senao o dia (hoje, antes do BCE publicar)
+ * ficaria congelado numa cotacao que ainda vai sair.
  */
 export async function getRate(date: string, from: string, to: string): Promise<number> {
   if (!from || !to || from === to) return 1
@@ -61,8 +62,8 @@ export async function getRate(date: string, from: string, to: string): Promise<n
               ON CONFLICT (date, base, quote) DO UPDATE SET rate = excluded.rate, updated_at = datetime('now')`,
         args: [date, from, to, rate],
       })
+      mem.set(key, rate)
     }
-    mem.set(key, rate)
     return rate
   } catch (e) {
     // API fora do ar nao pode virar gasto zerado: usa a ultima cotacao conhecida.

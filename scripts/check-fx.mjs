@@ -48,17 +48,20 @@ try {
   reply = () => ({ ok: true, body: { date: '2026-09-11', rates: { BRL: 5.5 } } })
   assert.equal(await getRate('2026-09-12', 'USD', 'BRL'), 5.5)
   assert.equal((await rows()).length, 1, 'cotacao de outro dia nao pode virar linha')
+  //    ...nem ficar presa no cache: quando a cotacao do dia sair, ela entra.
+  reply = () => ({ ok: true, body: { date: '2026-09-12', rates: { BRL: 5.6 } } })
+  assert.equal(await getRate('2026-09-12', 'USD', 'BRL'), 5.6, 'taxa emprestada ficou presa no cache')
 
   // 5. API fora do ar cai na ultima cotacao conhecida -- nunca em gasto zerado.
   resetRateCache()
   reply = () => ({ throws: true })
-  assert.equal(await getRate('2026-09-15', 'USD', 'BRL'), 5.4)
+  assert.equal(await getRate('2026-09-15', 'USD', 'BRL'), 5.6)
 
   // 6. Sem cotacao nenhuma pra usar, estoura em vez de inventar taxa.
   resetRateCache()
   await assert.rejects(() => getRate('2026-09-15', 'GBP', 'BRL'))
 
-  console.log('ok — 6 cenarios')
+  console.log('ok — 7 cenarios')
 } finally {
   rmSync(dir, { recursive: true, force: true })
 }
