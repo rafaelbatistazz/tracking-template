@@ -10,7 +10,9 @@ export const maxDuration = 300
  * Sincroniza gasto da Meta pra todas as contas habilitadas.
  * Reprocessa os ultimos N dias porque a Meta ainda mexe no gasto retroativo.
  *
- *   GET /api/cron/sync-meta?days=7   (header: x-cron-secret)
+ *   GET /api/cron/sync-meta?days=7      (header: x-cron-secret)
+ *   GET /api/cron/sync-meta?days=1000   backfill historico (syncMetaInsights
+ *     corta em janelas de 90 dias sozinho, entao um days grande e seguro)
  */
 export async function GET(req: NextRequest) {
   const secret = req.headers.get('x-cron-secret') || req.nextUrl.searchParams.get('secret')
@@ -19,7 +21,7 @@ export async function GET(req: NextRequest) {
   }
 
   await initDb()
-  const days = Math.min(Number(req.nextUrl.searchParams.get('days') || 3), 90)
+  const days = Math.min(Number(req.nextUrl.searchParams.get('days') || 3), 1500)
   const accounts = await db.execute({
     sql: `SELECT a.*, d.tz_offset, d.currency AS base_currency
           FROM ad_accounts a JOIN dashboards d ON d.id = a.dashboard_id
