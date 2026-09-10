@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import Logo from '../components/logo'
-import { PanelProvider, RangePicker, usePanel } from '../components/ui'
+import { AccountPicker, PanelProvider, RangePicker, usePanel } from '../components/ui'
 
 const NAV = [
   { href: '/dashboard', label: 'Dashboard' },
@@ -27,6 +27,7 @@ function Header({ comPeriodo }: { comPeriodo: boolean }) {
           ))}
         </select>
       )}
+      {comPeriodo && <AccountPicker />}
       {comPeriodo && <RangePicker />}
     </div>
   )

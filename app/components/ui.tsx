@@ -33,6 +33,9 @@ type Ctx = {
   setRange: (from: string, to: string) => void
   dashboards: any[]
   currency: string
+  accounts: any[]
+  accountId: string
+  setAccountId: (id: string) => void
 }
 
 const PanelContext = createContext<Ctx | null>(null)
@@ -49,6 +52,8 @@ export function PanelProvider({ children }: { children: React.ReactNode }) {
   const [dashboardId, setDashboardId] = useState('')
   const [from, setFrom] = useState(todayLocal())
   const [to, setTo] = useState(todayLocal())
+  const [accounts, setAccounts] = useState<any[]>([])
+  const [accountId, setAccountId] = useState('')
 
   useEffect(() => {
     fetch('/api/dashboards')
@@ -64,13 +69,26 @@ export function PanelProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (dashboardId) localStorage.setItem('rt_dashboard', dashboardId)
+    // Conta de outro dashboard nao faz sentido continuar selecionada.
+    setAccountId('')
+    if (!dashboardId) {
+      setAccounts([])
+      return
+    }
+    fetch(`/api/integrations/accounts?dashboardId=${dashboardId}`)
+      .then((r) => r.json())
+      .then((j) => setAccounts((j.accounts || []).filter((a: any) => a.enabled)))
+      .catch(() => setAccounts([]))
   }, [dashboardId])
 
   const currency = dashboards.find((d) => d.id === dashboardId)?.currency || 'BRL'
 
   return (
     <PanelContext.Provider
-      value={{ dashboardId, setDashboardId, from, to, setRange: (f, t) => { setFrom(f); setTo(t) }, dashboards, currency }}
+      value={{
+        dashboardId, setDashboardId, from, to, setRange: (f, t) => { setFrom(f); setTo(t) }, dashboards, currency,
+        accounts, accountId, setAccountId,
+      }}
     >
       {children}
     </PanelContext.Provider>
@@ -79,8 +97,10 @@ export function PanelProvider({ children }: { children: React.ReactNode }) {
 
 /** Monta a querystring padrao das rotas de metrica. */
 export function useQuery() {
-  const { dashboardId, from, to } = usePanel()
-  return dashboardId ? `dashboardId=${dashboardId}&from=${from}&to=${to}` : ''
+  const { dashboardId, from, to, accountId } = usePanel()
+  if (!dashboardId) return ''
+  const base = `dashboardId=${dashboardId}&from=${from}&to=${to}`
+  return accountId ? `${base}&accounts=${accountId}` : base
 }
 
 /* ---------------- componentes ---------------- */
@@ -123,6 +143,22 @@ export function RangePicker() {
         </button>
       ))}
     </div>
+  )
+}
+
+/** So aparece com 2+ contas habilitadas — com uma so, filtrar nao muda nada. */
+export function AccountPicker() {
+  const { accounts, accountId, setAccountId } = usePanel()
+  if (accounts.length < 2) return null
+
+  return (
+    <select value={accountId} onChange={(e) => setAccountId(e.target.value)}
+            className="bg-panel border border-line rounded-lg px-3 py-1.5 text-sm">
+      <option value="">Todas as contas</option>
+      {accounts.map((a) => (
+        <option key={a.account_id} value={a.account_id}>{a.name || a.account_id}</option>
+      ))}
+    </select>
   )
 }
 
