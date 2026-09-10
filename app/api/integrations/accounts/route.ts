@@ -14,7 +14,9 @@ export async function GET(req: NextRequest) {
       sql: `SELECT id, platform, profile_name, account_id, name, currency, enabled FROM ad_accounts WHERE dashboard_id = ? ORDER BY platform, name`,
       args: [dashboardId],
     })
-    return NextResponse.json({ accounts: r.rows })
+    // A moeda do dashboard vai junto: e ela que diz quais contas entram convertidas.
+    const d = await db.execute({ sql: `SELECT currency FROM dashboards WHERE id = ?`, args: [dashboardId] })
+    return NextResponse.json({ accounts: r.rows, baseCurrency: (d.rows[0] as any)?.currency ?? null })
   } catch (e) {
     return errorResponse(e)
   }

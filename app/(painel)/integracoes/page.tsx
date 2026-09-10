@@ -171,13 +171,17 @@ function WebhooksTab({ dashboardId }: { dashboardId: string }) {
 
 function AccountsTab({ dashboardId }: { dashboardId: string }) {
   const [accounts, setAccounts] = useState<any[]>([])
+  const [baseCurrency, setBaseCurrency] = useState<string | null>(null)
   const [token, setToken] = useState('')
   const [msg, setMsg] = useState('')
 
   const load = () =>
     fetch(`/api/integrations/accounts?dashboardId=${dashboardId}`)
       .then((r) => r.json())
-      .then((j) => setAccounts(j.accounts || []))
+      .then((j) => {
+        setAccounts(j.accounts || [])
+        setBaseCurrency(j.baseCurrency ?? null)
+      })
 
   useEffect(() => {
     load()
@@ -216,7 +220,7 @@ function AccountsTab({ dashboardId }: { dashboardId: string }) {
         {msg && <p className="text-muted text-xs">{msg}</p>}
       </Box>
 
-      <Box title="Contas" hint="Habilite so as contas que voce quer sincronizar — cada uma consome chamada de API.">
+      <Box title="Contas" hint={`Habilite so as contas que voce quer sincronizar — cada uma consome chamada de API. Conta em moeda diferente entra convertida pra ${baseCurrency || 'moeda do dashboard'} pela cotacao do dia.`}>
         <div className="space-y-1">
           {accounts.length === 0 && <p className="text-muted text-sm">Nenhuma conta ainda.</p>}
           {accounts.map((a) => (
@@ -224,7 +228,10 @@ function AccountsTab({ dashboardId }: { dashboardId: string }) {
               <input type="checkbox" checked={!!a.enabled} onChange={(e) => toggle(a.id, e.target.checked)} />
               <span className="flex-1 truncate">{a.name}</span>
               <span className="text-muted text-xs">{a.account_id}</span>
-              <span className="text-muted text-xs">{a.currency}</span>
+              <span className="text-muted text-xs">
+                {a.currency}
+                {baseCurrency && a.currency !== baseCurrency && ` → ${baseCurrency}`}
+              </span>
             </label>
           ))}
         </div>

@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "next dev -p 3210",
     "build": "next build",
-    "start": "next start -p 3210"
+    "start": "next start -p 3210",
+    "check": "node scripts/check-fx.mjs"
   },
   "dependencies": {
     "@libsql/client": "^0.17.2",

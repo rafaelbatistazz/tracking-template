@@ -95,6 +95,9 @@ Pra zerar tudo e comecar do nada de novo: apague o `local.db`.
 - Metricas: faturamento liquido e bruto, gasto, lucro, ROAS, ROI, margem, CPA/CPT/CPP,
   ticket medio, taxa de aprovacao no cartao, CPM, CPC, CTR, vendas sem tracking.
 - Custo por produto e imposto, com recalculo dos pedidos ja gravados.
+- Conversao de moeda: conta de anuncio em moeda diferente da do dashboard entra
+  convertida pela cotacao do dia (BCE, via frankfurter.app, sem chave). A taxa
+  usada fica gravada em `ad_insights.fx_rate` e a cotacao em `fx_rates`.
 - Pixel server-side (Conversions API) com fila e retry, dedupe por `event_id`,
   regra de IP (so IPv6 / com fallback / sem IP), valor por comissao ou bruto.
 - Multi-dashboard (um por negocio ou por moeda), com fuso e moeda proprios.
@@ -106,6 +109,23 @@ Pra zerar tudo e comecar do nada de novo: apague o `local.db`.
 - Motor de regras automatizadas (pausar anuncio por CPA/ROAS): a tabela `rules` existe,
   o executor nao.
 - Tela de CRUD dos pixels: a API (`/api/integrations/pixels`) esta pronta, a tela nao.
+
+## Moeda
+
+Cada dashboard tem uma moeda (`dashboards.currency`) e e nela que todo o app
+soma. Uma conta de anuncio em USD num dashboard em BRL tem o gasto convertido na
+hora do sync, com a cotacao do proprio dia — nao a de hoje. `ad_insights` guarda
+a moeda de origem e a taxa aplicada, entao da pra auditar linha a linha.
+
+- Fim de semana e feriado nao tem cotacao do BCE: vale a do ultimo dia util, e
+  esse dia nao vira linha em `fx_rates` (senao congelaria).
+- API fora do ar cai na ultima cotacao conhecida, nunca em gasto zero.
+- `FX_API_URL` troca a fonte da cotacao, se um dia precisar.
+- Quem ja tinha gasto sincronizado antes dessa versao tem as linhas antigas na
+  moeda da conta: apague as linhas em `ad_insights` e rode o sync de novo com
+  `?days=90` pra reconverter.
+
+`npm run check` roda os seis cenarios da conversao sem tocar na rede.
 
 ## Um aviso sobre os adapters
 

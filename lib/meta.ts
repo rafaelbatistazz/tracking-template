@@ -1,4 +1,5 @@
 import { db, initDb } from './db'
+import { getRate } from './fx'
 
 const VERSION = process.env.META_API_VERSION || 'v21.0'
 const GRAPH = `https://graph.facebook.com/${VERSION}`
@@ -38,9 +39,13 @@ export async function syncMetaInsights(opts: {
   accessToken: string
   since: string // YYYY-MM-DD
   until: string
+  currency?: string | null      // moeda da conta de anuncio
+  baseCurrency?: string | null  // moeda do dashboard
 }) {
   await initDb()
   const { dashboardId, accountId, accessToken, since, until } = opts
+  const currency = opts.currency || null
+  const baseCurrency = opts.baseCurrency || null
 
   const fields = [
     'spend', 'impressions', 'clicks', 'inline_link_clicks', 'reach',
@@ -60,22 +65,27 @@ export async function syncMetaInsights(opts: {
 
     for (const r of page.data || []) {
       if (!r.ad_id) continue
-      const cents = Math.round(parseFloat(r.spend || '0') * 100)
+      // Gasto entra sempre na moeda do dashboard: e ela que o resto do app soma.
+      const rate = currency && baseCurrency ? await getRate(r.date_start, currency, baseCurrency) : 1
+      const cents = Math.round(parseFloat(r.spend || '0') * 100 * rate)
 
       await db.execute({
         sql: `INSERT INTO ad_insights (dashboard_id, platform, date, account_id, campaign_id, adset_id, ad_id,
-                                       spend_cents, impressions, clicks, link_clicks, reach, updated_at)
-              VALUES (?, 'meta', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+                                       spend_cents, impressions, clicks, link_clicks, reach, currency, fx_rate, updated_at)
+              VALUES (?, 'meta', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
               ON CONFLICT (dashboard_id, platform, ad_id, date) DO UPDATE SET
                 spend_cents = excluded.spend_cents,
                 impressions = excluded.impressions,
                 clicks      = excluded.clicks,
                 link_clicks = excluded.link_clicks,
                 reach       = excluded.reach,
+                currency    = excluded.currency,
+                fx_rate     = excluded.fx_rate,
                 updated_at  = datetime('now')`,
         args: [
           dashboardId, r.date_start, accountId, r.campaign_id ?? null, r.adset_id ?? null, r.ad_id,
           cents, Number(r.impressions || 0), Number(r.clicks || 0), Number(r.inline_link_clicks || 0), Number(r.reach || 0),
+          currency, rate,
         ],
       })
       rows++

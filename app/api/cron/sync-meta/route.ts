@@ -21,7 +21,8 @@ export async function GET(req: NextRequest) {
   await initDb()
   const days = Math.min(Number(req.nextUrl.searchParams.get('days') || 3), 90)
   const accounts = await db.execute({
-    sql: `SELECT a.*, d.tz_offset FROM ad_accounts a JOIN dashboards d ON d.id = a.dashboard_id
+    sql: `SELECT a.*, d.tz_offset, d.currency AS base_currency
+          FROM ad_accounts a JOIN dashboards d ON d.id = a.dashboard_id
           WHERE a.enabled = 1 AND a.platform = 'meta'`,
     args: [],
   })
@@ -36,9 +37,12 @@ export async function GET(req: NextRequest) {
     try {
       const token = a.access_token || process.env.META_ACCESS_TOKEN
       if (!token) throw new Error('sem token')
-      const r = await syncMetaInsights({ dashboardId: a.dashboard_id, accountId: a.account_id, accessToken: token, since, until })
+      const r = await syncMetaInsights({
+        dashboardId: a.dashboard_id, accountId: a.account_id, accessToken: token, since, until,
+        currency: a.currency, baseCurrency: a.base_currency,
+      })
       const statuses = await syncMetaStatuses({ dashboardId: a.dashboard_id, accountId: a.account_id, accessToken: token })
-      results.push({ account: a.account_id, ...r, statuses })
+      results.push({ account: a.account_id, currency: a.currency, baseCurrency: a.base_currency, ...r, statuses })
     } catch (e: any) {
       results.push({ account: a.account_id, error: e?.message || 'falha' })
     }

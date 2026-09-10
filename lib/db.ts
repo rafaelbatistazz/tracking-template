@@ -157,10 +157,23 @@ const SCHEMA = [
     clicks       INTEGER NOT NULL DEFAULT 0,
     link_clicks  INTEGER NOT NULL DEFAULT 0,
     reach        INTEGER NOT NULL DEFAULT 0,
+    currency     TEXT,                      -- moeda original da conta de anuncio
+    fx_rate      REAL NOT NULL DEFAULT 1,   -- taxa usada pra chegar na moeda do dashboard
     updated_at   TEXT NOT NULL DEFAULT (datetime('now')),
     PRIMARY KEY (dashboard_id, platform, ad_id, date)
   )`,
   `CREATE INDEX IF NOT EXISTS idx_insights_dash_date ON ad_insights (dashboard_id, date)`,
+
+  /* Cotacao diaria (BCE via frankfurter.app), pra conta de anuncio em moeda
+     diferente da do dashboard. Uma linha por par e por dia. */
+  `CREATE TABLE IF NOT EXISTS fx_rates (
+    date       TEXT NOT NULL,               -- YYYY-MM-DD
+    base       TEXT NOT NULL,               -- moeda da conta (USD)
+    quote      TEXT NOT NULL,               -- moeda do dashboard (BRL)
+    rate       REAL NOT NULL,
+    updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+    PRIMARY KEY (date, base, quote)
+  )`,
 
   /* ---------- Tracking (script no site) ---------- */
   `CREATE TABLE IF NOT EXISTS visits (
@@ -261,12 +274,26 @@ const SCHEMA = [
   `CREATE INDEX IF NOT EXISTS idx_capi_status ON capi_queue (status, created_at)`,
 ]
 
+/* Colunas adicionadas depois. CREATE TABLE IF NOT EXISTS nao alcanca banco que
+   ja existe, entao vao como ALTER e o "ja existe" e ignorado. */
+const MIGRATIONS = [
+  `ALTER TABLE ad_insights ADD COLUMN currency TEXT`,
+  `ALTER TABLE ad_insights ADD COLUMN fx_rate REAL NOT NULL DEFAULT 1`,
+]
+
 let ready: Promise<void> | null = null
 
 export function initDb() {
   if (!ready) {
     ready = (async () => {
       for (const sql of SCHEMA) await db.execute(sql)
+      for (const sql of MIGRATIONS) {
+        try {
+          await db.execute(sql)
+        } catch (e: any) {
+          if (!/duplicate column name/i.test(e?.message || '')) throw e
+        }
+      }
     })().catch((e) => {
       ready = null
       throw e
