@@ -57,6 +57,8 @@ export default function AnunciosPage() {
             { key: 'spend', label: 'Gasto', align: 'right', render: (r) => money(r.spend, currency) },
             { key: 'revenue', label: 'Faturamento', align: 'right', render: (r) => money(r.revenue, currency) },
             { key: 'profit', label: 'Lucro', align: 'right', render: (r) => <span className={r.profit >= 0 ? 'text-good' : 'text-bad'}>{money(r.profit, currency)}</span> },
+            { key: 'results', label: 'Resultados', align: 'right', render: (r) => num(r.results) },
+            { key: 'costPerResult', label: 'Custo/resultado', align: 'right', render: (r) => (r.costPerResult == null ? '—' : money(r.costPerResult, currency)) },
             { key: 'roas', label: 'ROAS', align: 'right', render: (r) => ratio(r.roas) },
             { key: 'approvedOrders', label: 'Vendas', align: 'right', render: (r) => num(r.approvedOrders) },
             { key: 'cpa', label: 'CPA', align: 'right', render: (r) => (r.cpa == null ? '—' : money(r.cpa, currency)) },

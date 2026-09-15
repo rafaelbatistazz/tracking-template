@@ -157,6 +157,7 @@ const SCHEMA = [
     clicks       INTEGER NOT NULL DEFAULT 0,
     link_clicks  INTEGER NOT NULL DEFAULT 0,
     reach        INTEGER NOT NULL DEFAULT 0,
+    results      INTEGER NOT NULL DEFAULT 0, -- "Resultados" da Meta (evento do objetivo)
     currency     TEXT,                      -- moeda original da conta de anuncio
     fx_rate      REAL NOT NULL DEFAULT 1,   -- taxa usada pra chegar na moeda do dashboard
     updated_at   TEXT NOT NULL DEFAULT (datetime('now')),
@@ -279,6 +280,7 @@ const SCHEMA = [
 const MIGRATIONS = [
   `ALTER TABLE ad_insights ADD COLUMN currency TEXT`,
   `ALTER TABLE ad_insights ADD COLUMN fx_rate REAL NOT NULL DEFAULT 1`,
+  `ALTER TABLE ad_insights ADD COLUMN results INTEGER NOT NULL DEFAULT 0`,
 ]
 
 let ready: Promise<void> | null = null

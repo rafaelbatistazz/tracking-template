@@ -18,6 +18,7 @@ type InsightRow = {
   adset_name?: string
   ad_id?: string
   ad_name?: string
+  results?: { indicator?: string; values?: { value?: string }[] }[]
 }
 
 async function graph<T>(url: string): Promise<T> {
@@ -27,6 +28,11 @@ async function graph<T>(url: string): Promise<T> {
     throw new Error(`Meta API: ${json?.error?.message || res.status}`)
   }
   return json as T
+}
+
+/** "Resultados" do Gerenciador: a Meta ja escolhe o evento pelo objetivo do conjunto. */
+function resultCount(results: InsightRow['results']): number {
+  return (results || []).reduce((sum, r) => sum + Number(r.values?.[0]?.value || 0), 0)
 }
 
 /**
@@ -66,7 +72,7 @@ export async function syncMetaInsights(opts: {
   const baseCurrency = opts.baseCurrency || null
 
   const fields = [
-    'spend', 'impressions', 'clicks', 'inline_link_clicks', 'reach',
+    'spend', 'impressions', 'clicks', 'inline_link_clicks', 'reach', 'results',
     'account_id', 'campaign_id', 'campaign_name', 'adset_id', 'adset_name', 'ad_id', 'ad_name',
   ].join(',')
 
@@ -90,21 +96,22 @@ export async function syncMetaInsights(opts: {
 
         await db.execute({
           sql: `INSERT INTO ad_insights (dashboard_id, platform, date, account_id, campaign_id, adset_id, ad_id,
-                                         spend_cents, impressions, clicks, link_clicks, reach, currency, fx_rate, updated_at)
-                VALUES (?, 'meta', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+                                         spend_cents, impressions, clicks, link_clicks, reach, results, currency, fx_rate, updated_at)
+                VALUES (?, 'meta', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
                 ON CONFLICT (dashboard_id, platform, ad_id, date) DO UPDATE SET
                   spend_cents = excluded.spend_cents,
                   impressions = excluded.impressions,
                   clicks      = excluded.clicks,
                   link_clicks = excluded.link_clicks,
                   reach       = excluded.reach,
+                  results     = excluded.results,
                   currency    = excluded.currency,
                   fx_rate     = excluded.fx_rate,
                   updated_at  = datetime('now')`,
           args: [
             dashboardId, r.date_start, accountId, r.campaign_id ?? null, r.adset_id ?? null, r.ad_id,
             cents, Number(r.impressions || 0), Number(r.clicks || 0), Number(r.inline_link_clicks || 0), Number(r.reach || 0),
-            currency, rate,
+            resultCount(r.results), currency, rate,
           ],
         })
         rows++

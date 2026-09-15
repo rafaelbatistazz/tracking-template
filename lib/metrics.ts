@@ -98,7 +98,7 @@ export async function getSummary(dashboardId: string, range: Range, filters: Fil
     spendArgs.push(filters.trafficSource)
   }
   const spendRow = await db.execute({
-    sql: `SELECT SUM(spend_cents) AS spend, SUM(impressions) AS impressions, SUM(clicks) AS clicks, SUM(link_clicks) AS link_clicks
+    sql: `SELECT SUM(spend_cents) AS spend, SUM(impressions) AS impressions, SUM(clicks) AS clicks, SUM(link_clicks) AS link_clicks, SUM(results) AS results
           FROM ad_insights WHERE ${spendWhere}`,
     args: spendArgs,
   })
@@ -199,6 +199,8 @@ export async function getSummary(dashboardId: string, range: Range, filters: Fil
     impressions: n(s.impressions),
     clicks: n(s.clicks),
     linkClicks: n(s.link_clicks),
+    results: n(s.results),
+    costPerResult: n(s.results) > 0 ? Math.round(spend / n(s.results)) : null,
     cpm: n(s.impressions) > 0 ? Math.round((spend / n(s.impressions)) * 1000) : null,
     cpc: n(s.clicks) > 0 ? Math.round(spend / n(s.clicks)) : null,
     ctr: n(s.impressions) > 0 ? n(s.clicks) / n(s.impressions) : null,
@@ -291,7 +293,7 @@ export async function getAdObjects(dashboardId: string, level: 'account' | 'camp
 
   const spendRows = await db.execute({
     sql: `SELECT ${col} AS object_id, SUM(spend_cents) AS spend, SUM(impressions) AS impressions,
-                 SUM(clicks) AS clicks, SUM(link_clicks) AS link_clicks
+                 SUM(clicks) AS clicks, SUM(link_clicks) AS link_clicks, SUM(results) AS results
           FROM ad_insights WHERE dashboard_id = ? AND date BETWEEN ? AND ? AND ${col} IS NOT NULL
           GROUP BY object_id`,
     args: [dashboardId, range.fromLocal, range.toLocal],
@@ -340,6 +342,7 @@ function decorate(sales: any, spendRow: any) {
   const profit = revenue - spend - cost
   const impressions = n(spendRow?.impressions)
   const clicks = n(spendRow?.clicks)
+  const results = n(spendRow?.results)
 
   return {
     value: sales.value ?? null,
@@ -365,5 +368,7 @@ function decorate(sales: any, spendRow: any) {
     ctr: impressions > 0 ? clicks / impressions : null,
     cpm: impressions > 0 ? Math.round((spend / impressions) * 1000) : null,
     cpc: clicks > 0 ? Math.round(spend / clicks) : null,
+    results,
+    costPerResult: results > 0 ? Math.round(spend / results) : null,
   }
 }
