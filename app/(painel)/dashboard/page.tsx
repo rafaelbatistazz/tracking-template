@@ -31,11 +31,15 @@ export default function DashboardPage() {
       {vazio && <PrimeiroUso />}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <Card label="Faturamento liquido" value={money(data.revenue, currency)} hint={`bruto ${money(data.grossRevenue, currency)}`} />
-        <Card label="Gastos com anuncios" value={money(data.spend, currency)}
-              hint={`${num(data.results)} resultados · ${data.costPerResult == null ? '—' : money(data.costPerResult, currency)} cada`} />
+        <Card label="Gastos com anuncios" value={money(data.spend, currency)} />
         <Card label="Lucro" value={money(data.profit, currency)} tone={data.profit >= 0 ? 'good' : 'bad'}
               hint={`margem ${pct(data.margin)}`} />
         <Card label="ROAS" value={ratio(data.roas)} hint={`ROI ${data.roi == null ? '—' : pct(data.roi, 0)}`} />
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        <Card label="Resultados" value={num(data.results)} hint="Meta, pelo objetivo de cada conjunto" />
+        <Card label="Custo por resultado" value={data.costPerResult == null ? '—' : money(data.costPerResult, currency)} />
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
